@@ -9,7 +9,8 @@ RUN set -eux ; \
 		build-essential \
 	; \
 	npm --global config set user root ; \
-	npm --global install screeps ; \
+	npm --global install screeps --cache /tmp/empty-cache ; \
+	rm -fr /tmp/empty-cache /root/.cache ; \
 	apt-get remove -y \
 		python3 \
 		build-essential \
