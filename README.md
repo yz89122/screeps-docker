@@ -1,5 +1,7 @@
 # screeps-docker
 
+Dockerlized [Screeps](https://github.com/screeps/screeps).
+
 ## Build
 
 ```bash
