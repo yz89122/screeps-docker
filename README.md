@@ -8,6 +8,26 @@ Dockerlized [Screeps](https://github.com/screeps/screeps).
 docker build -t screeps .
 ```
 
+### alpine
+
+```bash
+docker build -t screeps:alpine -f Dockerfile-alpine .
+```
+
+## Pre-built Image
+
+See in [Docker Hub](https://hub.docker.com/r/yz89122/screeps)
+
+```bash
+docker pull yz89122/screeps
+```
+
+### alpine
+
+```bash
+docker pull yz89122/screeps:alpine
+```
+
 ## Run
 
 1. Generate configurations
