@@ -1,0 +1,25 @@
+FROM node:12-alpine
+
+WORKDIR /app
+
+RUN set -eux ; \
+	apk add --no-cache --virtual .build-deps \
+		build-base \
+		gcc \
+		g++ \
+		curl \
+		git \
+		python3 \
+	; \
+	npm --global config set user root ; \
+	npm --global install screeps --cache /tmp/empty-cache ; \
+	apk del --no-cache .build-deps ; \
+	rm -fr /tmp/empty-cache /root/.cache /root/.config ;
+
+RUN set -eux ; \
+	echo api_key | npx screeps init
+
+EXPOSE 21025 21026
+
+CMD ["npx", "screeps", "start"]
+
