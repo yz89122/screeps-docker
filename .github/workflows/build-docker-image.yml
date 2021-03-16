@@ -1,0 +1,47 @@
+name: Build Screeps Docker Image
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Screeps version to build'
+        required: false
+        default: 'latest'
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_IMAGE: ${{ secrets.DOCKER_HUB_USERNAME }}/screeps
+      VERSION: ${{ github.event.inputs.version || 'latest' }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Docker Hub Authentication
+      run: docker login --username '${{ secrets.DOCKER_HUB_USERNAME }}' --password '${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}'
+    - name: Pull the Latest Built
+      run: docker pull "${DOCKER_IMAGE}:latest" || true
+    - name: Build the Docker Image
+      run: docker build --build-arg "version=${VERSION}" --cache-from "${DOCKER_IMAGE}:latest" --file Dockerfile --pull --tag "${DOCKER_IMAGE}:${VERSION}" .
+    - name: Push the Docker image
+      run: docker push "${DOCKER_IMAGE}:${VERSION}"
+      
+  build-alpine:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_IMAGE: ${{ secrets.DOCKER_HUB_USERNAME }}/screeps
+      VERSION: ${{ github.event.inputs.version || 'latest' }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Docker Hub Authentication
+      run: docker login --username '${{ secrets.DOCKER_HUB_USERNAME }}' --password '${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}'
+    - name: Pull the Latest Built
+      run: docker pull "${DOCKER_IMAGE}:alpine" || true
+    - name: Build the Docker Image
+      run: docker build --build-arg "version=${VERSION}" --cache-from "${DOCKER_IMAGE}:alpine" --file Dockerfile-alpine --pull --tag "${DOCKER_IMAGE}:alpine-${VERSION}" .
+    - name: Push the Docker image
+      run: docker push "${DOCKER_IMAGE}:alpine-${VERSION}"
