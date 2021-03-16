@@ -1,0 +1,22 @@
+name: Build Versions
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  schedule:
+    - cron:  '* * * * *'
+  workflow_dispatch:
+
+jobs:
+  dispatch-builds:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Get all Versions
+        run: npm view screeps versions --json >versions.json
+      - name: Dispatch Builds
+        env:
+          GITHUB_BASIC_AUTH: ${{ secrets._GITHUB_BASIC_AUTH }}
+        run: node workflow_dispatch.js
