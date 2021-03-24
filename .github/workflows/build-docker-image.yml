@@ -28,7 +28,9 @@ jobs:
     - name: Pull the Latest Built
       run: docker pull "${DOCKER_IMAGE}:latest" || true
     - name: Build the Docker Image
-      run: docker build --build-arg "version=${VERSION}" --cache-from "${DOCKER_IMAGE}:latest" --file Dockerfile --pull --tag "${DOCKER_IMAGE}:${VERSION}" .
+      run: docker build --build-arg "version=${VERSION}" --cache-from "${DOCKER_IMAGE}:latest" --file 'Dockerfile' --pull --tag "${DOCKER_IMAGE}:${VERSION}" .
+    - name: Smoke Test
+      run: docker run -i --rm "${DOCKER_IMAGE}:${VERSION}" npx screeps
     - name: Push the Docker image
       run: docker push "${DOCKER_IMAGE}:${VERSION}"
       
@@ -44,6 +46,23 @@ jobs:
     - name: Pull the Latest Built
       run: docker pull "${DOCKER_IMAGE}:alpine" || true
     - name: Build the Docker Image
-      run: docker build --build-arg "version=${VERSION}" --cache-from "${DOCKER_IMAGE}:alpine" --file Dockerfile-alpine --pull --tag "${DOCKER_IMAGE}:alpine-${VERSION}" .
+      run: |
+        TAG="${DOCKER_IMAGE}:alpine-${VERSION}"
+        if [ "${VERSION}" = 'latest' ]; then
+          TAG="${DOCKER_IMAGE}:alpine"
+        fi
+        docker build --build-arg "version=${VERSION}" --cache-from "${DOCKER_IMAGE}:alpine" --file 'Dockerfile-alpine' --pull --tag "${TAG}" .
+    - name: Smoke Test
+      run: |
+        TAG="${DOCKER_IMAGE}:alpine-${VERSION}"
+        if [ "${VERSION}" = 'latest' ]; then
+          TAG="${DOCKER_IMAGE}:alpine"
+        fi
+        docker run -i --rm "${TAG}" npx screeps
     - name: Push the Docker image
-      run: docker push "${DOCKER_IMAGE}:alpine-${VERSION}"
+      run: |
+        TAG="${DOCKER_IMAGE}:alpine-${VERSION}"
+        if [ "${VERSION}" = 'latest' ]; then
+          TAG="${DOCKER_IMAGE}:alpine"
+        fi
+        docker push "${TAG}"
