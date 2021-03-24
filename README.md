@@ -8,10 +8,24 @@ Dockerlized [Screeps](https://github.com/screeps/screeps).
 docker build -t screeps .
 ```
 
+### With Version
+
+```bash
+VERSION=4.2.12
+docker build --build-arg "version=${VERSION}" -t screeps .
+```
+
 ### alpine
 
 ```bash
 docker build -t screeps:alpine -f Dockerfile-alpine .
+```
+
+#### With Version
+
+```bash
+VERSION=4.2.12
+docker build --build-arg "version=${VERSION}"  -f Dockerfile-alpine -t screeps .
 ```
 
 ## Pre-built Image
@@ -22,10 +36,23 @@ See in [Docker Hub](https://hub.docker.com/r/yz89122/screeps)
 docker pull yz89122/screeps
 ```
 
+### With Version
+
+```bash
+VERSION=4.2.12
+docker pull "yz89122/screeps:${VERSION}"
+```
 ### alpine
 
 ```bash
 docker pull yz89122/screeps:alpine
+```
+
+#### With Version
+
+```bash
+VERSION=4.2.12
+docker pull "yz89122/screeps:alpine-${VERSION}"
 ```
 
 ## Run
