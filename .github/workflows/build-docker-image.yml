@@ -26,12 +26,25 @@ jobs:
     - name: Docker Hub Authentication
       run: docker login --username '${{ secrets.DOCKER_HUB_USERNAME }}' --password '${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}'
     - name: Pull the Latest Built
-      run: docker pull "${DOCKER_IMAGE}:latest" || true
+      id: pull
+      run: docker pull "${DOCKER_IMAGE}:${VERSION}" && docker tag "${DOCKER_IMAGE}:${VERSION}" 'previous-build'
     - name: Build the Docker Image
-      run: docker build --build-arg "version=${VERSION}" --cache-from "${DOCKER_IMAGE}:latest" --file 'Dockerfile' --pull --tag "${DOCKER_IMAGE}:${VERSION}" .
+      run: docker build --build-arg "version=${VERSION}" --file 'Dockerfile' --pull --tag 'current-build' .
+    - name: Check Duplication
+      id: check_dup
+      if: ${{ steps.pull.outcome == 'success' }}
+      run: |
+        mkdir -p "${PWD}/test/previous-build" "${PWD}/test/current-build"
+        docker run --rm --volume "${PWD}:/test" 'previous-build' cp -r '/usr/local/lib/node_modules/screeps' '/test/previous-build'
+        docker run --rm --volume "${PWD}:/test" 'current-build' cp -r '/usr/local/lib/node_modules/screeps' '/test/current-build'
+        diff --brief --recursive --exclude 'build' --no-dereference "${PWD}/test/previous-build" "${PWD}/test/current-build"
     - name: Smoke Test
-      run: docker run -i --rm "${DOCKER_IMAGE}:${VERSION}" npx screeps
-    - name: Push the Docker image
+      if: ${{ steps.check_dup.outcome == 'failure' }}
+      run: docker run -i --rm 'current-build' npx screeps
+    - name: Tag The Docker Image
+      run: docker tag 'current-build' "${DOCKER_IMAGE}:${VERSION}"
+    - name: Push The Docker Image
+      if: ${{ steps.check_dup.outcome == 'failure' }}
       run: docker push "${DOCKER_IMAGE}:${VERSION}"
       
   build-alpine:
@@ -44,25 +57,32 @@ jobs:
     - name: Docker Hub Authentication
       run: docker login --username '${{ secrets.DOCKER_HUB_USERNAME }}' --password '${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}'
     - name: Pull the Latest Built
-      run: docker pull "${DOCKER_IMAGE}:alpine" || true
+      id: pull
+      run: |
+        TAG="${DOCKER_IMAGE}:alpine-${VERSION}"
+        [[ "${VERSION}" = 'latest' ]] && TAG="${DOCKER_IMAGE}:alpine"
+        docker pull "${TAG}" && docker tag "${TAG}" 'previous-build'
     - name: Build the Docker Image
+      run: docker build --build-arg "version=${VERSION}" --file 'Dockerfile-alpine' --pull --tag 'current-build' .
+    - name: Check Duplication
+      id: check_dup
+      if: ${{ steps.pull.outcome == 'success' }}
       run: |
-        TAG="${DOCKER_IMAGE}:alpine-${VERSION}"
-        if [ "${VERSION}" = 'latest' ]; then
-          TAG="${DOCKER_IMAGE}:alpine"
-        fi
-        docker build --build-arg "version=${VERSION}" --cache-from "${DOCKER_IMAGE}:alpine" --file 'Dockerfile-alpine' --pull --tag "${TAG}" .
+        mkdir -p "${PWD}/test/previous-build" "${PWD}/test/current-build"
+        docker run --rm --volume "${PWD}:/test" 'previous-build' cp -r '/usr/local/lib/node_modules/screeps' '/test/previous-build'
+        docker run --rm --volume "${PWD}:/test" 'current-build' cp -r '/usr/local/lib/node_modules/screeps' '/test/current-build'
+        diff --brief --recursive --exclude 'build' --no-dereference "${PWD}/test/previous-build" "${PWD}/test/current-build"
     - name: Smoke Test
+      if: ${{ steps.check_dup.outcome == 'failure' }}
+      run: docker run -i --rm 'current-build' npx screeps
+    - name: Tag The Docker Image
       run: |
         TAG="${DOCKER_IMAGE}:alpine-${VERSION}"
-        if [ "${VERSION}" = 'latest' ]; then
-          TAG="${DOCKER_IMAGE}:alpine"
-        fi
-        docker run -i --rm "${TAG}" npx screeps
+        [[ "${VERSION}" = 'latest' ]] && TAG="${DOCKER_IMAGE}:alpine"
+        docker tag 'current-build' "${TAG}"
     - name: Push the Docker image
+      if: ${{ steps.check_dup.outcome == 'failure' }}
       run: |
         TAG="${DOCKER_IMAGE}:alpine-${VERSION}"
-        if [ "${VERSION}" = 'latest' ]; then
-          TAG="${DOCKER_IMAGE}:alpine"
-        fi
+        [[ "${VERSION}" = 'latest' ]] && TAG="${DOCKER_IMAGE}:alpine"
         docker push "${TAG}"
